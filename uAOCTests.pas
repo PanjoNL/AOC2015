@@ -16,10 +16,13 @@ public
   Class procedure RunTests;
 end;
 
-Const AOCTestData: array[0..2] of AOCTest =
+Const AOCTestData: array[0..5] of AOCTest =
 (  (AOCClass: TAdventOfCodeDay1; ExpectedSolutionA: '74'; ExpectedSolutionB: '1795'),
   (AOCClass: TAdventOfCodeDay2; ExpectedSolutionA: '1598415'; ExpectedSolutionB: '3812909'),
-  (AOCClass: TAdventOfCodeDay3; ExpectedSolutionA: '2081'; ExpectedSolutionB: '2341')
+  (AOCClass: TAdventOfCodeDay3; ExpectedSolutionA: '2081'; ExpectedSolutionB: '2341'),
+  (AOCClass: TAdventOfCodeDay4; ExpectedSolutionA: '282749'; ExpectedSolutionB: '9962624'),
+  (AOCClass: TAdventOfCodeDay5; ExpectedSolutionA: '255'; ExpectedSolutionB: '55'),
+  (AOCClass: TAdventOfCodeDay6; ExpectedSolutionA: '543903'; ExpectedSolutionB: '14687245')
 );
 
 implementation
