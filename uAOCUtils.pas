@@ -214,9 +214,16 @@ var
   i: Integer;
 begin
   result := 0;
-  for i := 1 to Length(S) do
-    if S[i] = C then
-      inc(result);
+
+  i := Pos(c, s);
+  if i = 0 then
+    exit;
+
+  while i > 0 do
+  begin
+    Inc(Result);
+    i := Pos(c, s, i+1);
+  end;
 end;
 
 end.
