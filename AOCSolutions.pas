@@ -152,6 +152,17 @@ type
     function SolveA: Variant; override;
     function SolveB: Variant; override;
   end;
+
+  TValidator = function(const aObject: string; const Value: integer): Boolean of object;
+  TAdventOfCodeDay16 = class(TAdventOfCode)
+  private
+    function FindAunt(const Validator: TValidator): string;
+    function ValidatorA(const aObject: string; const Value: integer): Boolean;
+    function ValidatorB(const aObject: string; const Value: integer): Boolean;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   protected
@@ -1036,6 +1047,73 @@ begin
   Ingredients.Free;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay16'}
+function TAdventOfCodeDay16.SolveA: Variant;
+begin
+  Result := FindAunt(ValidatorA);
+end;
+
+function TAdventOfCodeDay16.SolveB: Variant;
+begin
+  Result := FindAunt(ValidatorB);//389 to high
+end;
+
+function TAdventOfCodeDay16.FindAunt(const Validator: TValidator): String;
+var s: string;
+    split: TStringDynArray;
+    i: integer;
+    Error: Boolean;
+begin
+  result := '';
+  for s in FInput do
+  begin
+    Split := SplitString(s.Replace(':', '').replace(',', ''), ' ');
+    Error := False;
+    i := 2;
+    while i < Length(split) do
+    begin
+      error := error or Validator(Split[i], Split[i+1].ToInteger);
+      inc(i, 2);
+    end;
+
+    if not error then
+      Result := split[1];
+  end;
+end;
+
+function TAdventOfCodeDay16.ValidatorA(const aObject: string; const Value: integer): Boolean;
+begin
+  case IndexStr(aObject, ['children', 'cats', 'samoyeds', 'pomeranians', 'akitas', 'vizslas', 'goldfish', 'trees','cars','perfumes'    ]) of
+    0: Result := (value <> 3);
+    1: Result := (value <> 7);
+    2: Result := (value <> 2);
+    3: Result := (value <> 3);
+    4: Result := (value <> 0);
+    5: Result := (value <> 0);
+    6: Result := (value <> 5);
+    7: Result := (value <> 3);
+    8: Result := (value <> 2);
+    9: Result := (value <> 1);
+  else
+    Result := False;
+    Assert(false, aObject + ' not found');
+  end;
+end;
+
+function TAdventOfCodeDay16.ValidatorB(const aObject: string; const Value: integer): Boolean;
+begin
+  case IndexStr(aObject, ['cats', 'pomeranians', 'goldfish', 'trees']) of
+    0: Result := (value < 7);
+    1: Result := (value > 3);
+    2: Result := (value > 5);
+    3: Result := (value < 3);
+  else
+    Result := ValidatorA(aObject, Value);
+  end;
+end;
+
+{$ENDREGION}
+
 
 (*
 {$Region 'TAdventOfCodeDay'}
@@ -1064,7 +1142,8 @@ initialization
   RegisterClasses([
     TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3,TAdventOfCodeDay4,TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9,TAdventOfCodeDay10,
-    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15 ]);
+    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
+    TAdventOfCodeDay16 ]);
 
 end.
 
