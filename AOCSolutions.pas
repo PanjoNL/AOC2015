@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
   Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Generics.Defaults, System.Generics.Collections,
   system.Diagnostics, AOCBase, RegularExpressions, System.DateUtils, system.StrUtils,
-  system.Math, uAOCUtils, system.Types, IdHashMessageDigest, System.Character;
+  system.Math, uAOCUtils, system.Types, IdHashMessageDigest, System.Character, System.Json;
 
 type
   TAdventOfCodeDay1 = class(TAdventOfCode)
@@ -96,6 +96,58 @@ type
   private
     SentanceA: string;
     function Talk(Const StartSentacne: String; Const Repeats: Integer): string;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay11 = class(TAdventOfCode)
+  private
+    FirstPassWord: string;
+    function FindNewPassWord(Const OldPassWord: String): string;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay12 = class(TAdventOfCode)
+  private   
+    function CountNumbers(const CheckForRed: Boolean): Integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay13 = class(TAdventOfCode)
+  private 
+    PotentialHapiness: TDictionary<string, Integer>;
+    Attendees: TList<String>; 
+
+    function ArrangeSeating(Const Attendees: TList<String>): Integer; 
+  protected
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;  
+
+  RReindeerSpecs = record
+    Speed, TravelTime, RestingTime: Integer;
+  end;
+
+  TAdventOfCodeDay14 = class(TAdventOfCode)
+    ReindeerSpecs: TDictionary<String,RReindeerSpecs>;
+    function CalculateDistanceTraveld(const Racetime: Integer; Specs: RReindeerSpecs): integer;
+  protected
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay15 = class(TAdventOfCode)
+  private
+    function CreateCookies(Const LimitCalories: Boolean): integer;
   protected
     function SolveA: Variant; override;
     function SolveB: Variant; override;
@@ -579,8 +631,6 @@ end;
 {$ENDREGION}
 {$Region 'TAdventOfCodeDay10'}
 function TAdventOfCodeDay10.SolveA: Variant;
-var NewSaid, Said, PrevChar: string;
-  i, j, count: integer;
 begin
   SentanceA := Talk(FInput[0], 40);
   Result := Length(SentanceA);
@@ -621,9 +671,373 @@ begin
 end;
 
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay11'}
+function TAdventOfCodeDay11.SolveA: Variant;
+begin
+  FirstPassWord := FindNewPassWord(FInput[0]);
+  Result := FirstPassWord;
+end;
+
+function TAdventOfCodeDay11.SolveB: Variant;
+begin
+  Result := FindNewPassWord(FirstPassWord);
+end;
+
+function TAdventOfCodeDay11.FindNewPassWord(Const OldPassWord: String): string;
+
+  function PassWordValid(Const aPassWord: String): Boolean;
+  var i, Doubles: Integer;
+  begin
+    Result := False;
+
+    for i := 2 to Length(aPassWord)-1 do
+    begin
+      if ((Ord(aPassWord[i]) - Ord(aPassWord[i-1])) = 1) and ((Ord(aPassWord[i+1]) - Ord(aPassWord[i])) = 1) then
+        Break;
+
+      if i = Length(aPassWord)-1 then
+        Exit;
+    end;
+
+    Doubles := 0;
+    for i := Ord('a') to Ord('z') do
+      if Pos(Chr(i)+Chr(i), aPassWord) > 0 then
+        Inc(Doubles);
+    if Doubles >= 2 then
+      Result := True;
+  end;
+
+  function NextPassWord(Const aCurrent: String): string;
+  Var NextChar: Char;
+      Index: Integer;
+  begin
+    Result := aCurrent;
+    Index := Length(aCurrent);
+
+    while Index > 0 do
+    begin
+      NextChar := Chr(Ord(Result[Index])+1);
+      if IndexStr(NextChar, ['i','o','l']) >= 0 then
+        NextChar := Chr(Ord(Result[Index])+1);
+
+      if Ord(nextchar) > Ord('z') then
+      begin
+        NextChar := 'a';
+        Result[Index] := NextChar;
+        Dec(index);
+        if Index = 0 then
+          Exit;
+      end
+      else
+      begin
+        Result[Index] := NextChar;
+        Index := -1;
+      end;
+    end;
+  end;
+
+var FirstTime: Boolean;
+begin
+  Result := OldPassWord;
+  FirstTime := True;
+  while (not PassWordValid(Result)) or FirstTime do
+  begin
+    FirstTime := False;
+    Result := NextPassWord(Result);
+  end;
+end;
+
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay12'}
+function TAdventOfCodeDay12.SolveA: Variant;
+begin
+  Result := CountNumbers(False);
+end;
+
+function TAdventOfCodeDay12.SolveB: Variant;
+begin
+  Result := CountNumbers(True);
+end;
+
+function TAdventOfCodeDay12.CountNumbers(const CheckForRed: Boolean): Integer;
+
+   procedure Process(aJson: TJsonValue);
+  var i: Integer;
+      p: TJSONPair;
+  begin
+    if aJson is TJSONNumber then
+      Result := Result + TJSONNumber(aJson).Value.ToInteger
+    else if aJson is TJSONObject then
+    begin
+      if CheckForRed then      
+      for i := 0 to TJSONObject(aJson).Count - 1 do
+      begin
+        p := TJSONObject(aJson).Pairs[i];
+        if (p.JsonValue is TJSONString) and ((p.JsonValue as TJSONString).Value = 'red') then
+          Exit;
+      end;
+
+      for i := 0 to TJSONObject(aJson).Count - 1 do
+      begin
+        p := TJSONObject(aJson).Pairs[i];
+        Process(p.JsonValue);
+      end
+    end
+    else if aJson is TJSONArray then
+      for i := 0 to TJSONArray(aJson).Count - 1 do
+        Process(TJSONArray(aJson).Items[i]);
+  end;
+
+Var Json: TJSONValue;
+begin
+  Json := TJSONObject.ParseJSONValue(FInput[0]);
+  Result := 0;
+  Process(Json);
+  Json.Free;
+end;
 
 
-   (*
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay13'}
+procedure TAdventOfCodeDay13.BeforeSolve;
+var s: string; 
+    Split: TStringDynArray;
+begin
+  PotentialHapiness := TDictionary<string, Integer>.Create; 
+  Attendees := TList<String>.Create; 
+
+  for s in FInput do
+  begin
+    Split := SplitString(s, ' .');
+    if not Attendees.Contains(Split[0]) then
+      Attendees.Add(Split[0]);
+    PotentialHapiness.Add(Split[0]+Split[10], IfThen(Split[2] = 'gain', 1, -1)*Split[3].ToInteger);
+  end;
+end;
+
+procedure TAdventOfCodeDay13.AfterSolve;
+begin
+  PotentialHapiness.Free;
+  Attendees.Free;
+end;
+
+function TAdventOfCodeDay13.ArrangeSeating(Const Attendees: TList<String>): Integer; 
+
+ procedure DetermineHappiness(Const attending: TList<string>); 
+  var Change, Happiness, i, j: integer;
+  begin
+    Happiness := 0;
+    for i := 0 to attending.Count-1 do
+    begin
+      j := i-1;
+      if i = 0 then
+        j := attending.Count-1;         
+      PotentialHapiness.TryGetValue(attending[i]+attending[j], Change);
+      Happiness := Happiness + Change; 
+
+      j := i + 1;
+      if i = attending.Count-1 then
+        j := 0;      
+      PotentialHapiness.TryGetValue(attending[i]+attending[j], Change);
+      Happiness := Happiness + Change; 
+    end;
+    
+    Result := Max(Happiness, Result);
+  end;    
+
+  procedure InternalArrengeSeating(const Attending: TList<String>); 
+  var s: string;
+  begin
+    if Attending.Count = Attendees.Count then
+      DetermineHappiness(Attending)
+    else
+    for s in Attendees do
+      if not Attending.Contains(s) then
+      begin
+        Attending.Add(s);
+        InternalArrengeSeating(Attending);
+        Attending.Remove(s);      
+      end;      
+  end;
+
+var Attending: TList<String>;
+begin
+  Attending := TList<String>.Create;
+  Result := 0;
+  InternalArrengeSeating(Attending);
+  Attending.Free;
+end;
+
+function TAdventOfCodeDay13.SolveA: Variant;
+begin
+  Result := ArrangeSeating(Attendees);
+end;
+
+function TAdventOfCodeDay13.SolveB: Variant;
+Var ExtendedAtendees: TList<String>; 
+begin
+  ExtendedAtendees := TList<String>.Create(Attendees); 
+  ExtendedAtendees.Add('Me');
+  Result := ArrangeSeating(ExtendedAtendees); 
+  ExtendedAtendees.Free;  
+end;
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay14'}
+procedure TAdventOfCodeDay14.BeforeSolve;
+Var Spec: RReindeerSpecs;
+    split: TstringDynArray;
+    s: string;
+begin
+  ReindeerSpecs := TDictionary<String,RReindeerSpecs>.Create;
+
+  for s in FInput do
+  begin
+    Split := SplitString(s, ' ');
+    Spec.Speed := Split[3].ToInteger;
+    Spec.TravelTime := Split[6].ToInteger;
+    Spec.RestingTime := Split[13].ToInteger;
+    ReindeerSpecs.Add(Split[0], Spec);
+  end;
+end;
+
+procedure TAdventOfCodeDay14.AfterSolve;
+begin
+  ReindeerSpecs.Free;
+end;
+
+function TAdventOfCodeDay14.CalculateDistanceTraveld(const Racetime: Integer; Specs: RReindeerSpecs): integer;
+var TotalTime: Integer;
+begin
+  TotalTime := 0;
+  Result := 0;
+
+  while TotalTime < RaceTime do
+  begin
+    if TotalTime + Specs.TravelTime > RaceTime then
+      Result := Result + Specs.Speed * (RaceTime - TotalTime)
+    else
+      Result := Result + Specs.Speed * Specs.TravelTime;
+    TotalTime := TotalTime + Specs.TravelTime + Specs.RestingTime;
+  end;
+end;
+
+function TAdventOfCodeDay14.SolveA: Variant;
+var Spec: RReindeerSpecs;
+begin
+  Result := 0;
+
+  for Spec in ReindeerSpecs.Values do
+    Result := Max(Result, CalculateDistanceTraveld(2503, Spec));
+end;
+
+function TAdventOfCodeDay14.SolveB: Variant;
+var Points, DistanceTraveld: TDictionary<String, Integer>;
+  Point, i, BestDistance, Traveld: Integer;
+  Reindeer: TPair<String, RReindeerSpecs>;
+  Pair: TPair<String, Integer>;
+begin
+  Points  := TDictionary<String, Integer>.Create;
+  DistanceTraveld := TDictionary<String, Integer>.Create;
+
+  for i := 1 to 2503 do
+  begin
+    BestDistance := 0;
+
+    for Reindeer in ReindeerSpecs do
+    begin
+      Traveld := CalculateDistanceTraveld(i, Reindeer.Value);
+      BestDistance := Max(BestDistance, Traveld);
+      DistanceTraveld.AddOrSetValue(Reindeer.Key, Traveld);
+    end;
+
+    for Pair in DistanceTraveld do
+      if Pair.Value = BestDistance then
+      begin
+        Points.TryGetValue(Pair.Key, Point);
+        Points.AddOrSetValue(Pair.Key, Point+1);
+      end;
+  end;
+
+  Result := 0;
+  for Point in Points.Values do
+    Result := Max(Point, Result);
+
+  Points.Free;
+  DistanceTraveld.Free;
+end;
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay15'}
+function TAdventOfCodeDay15.SolveA: Variant;
+begin
+  Result := CreateCookies(false);
+end;
+
+function TAdventOfCodeDay15.SolveB: Variant;
+begin
+  Result := CreateCookies(True)
+end;
+
+type RIngredientData = Record
+ capacity, durability, flavor, texture, calories: integer;
+End;
+
+function TAdventOfCodeDay15.CreateCookies(Const LimitCalories: Boolean): integer;
+var Ingredients: TList<RIngredientData>;
+    IngredientData: RIngredientData;
+    Split: TStringDynArray;
+    s: string;
+    i1, i2, i3, i4, Score, totalcapacity, totaldurability, totalflavor, totaltexture, totalcalories: integer;
+begin
+  Ingredients := TList<RIngredientData>.Create;
+  for s in FInput do
+  begin
+    Split := SplitString(s.Replace(',', ''), ' ');
+    IngredientData.capacity := Split[2].ToInteger;
+    IngredientData.durability := Split[4].ToInteger;
+    IngredientData.flavor := Split[6].ToInteger;
+    IngredientData.texture := Split[8].ToInteger;
+    IngredientData.calories := Split[10].ToInteger;
+    Ingredients.Add(IngredientData)
+  end;
+
+  Result := 0;
+  for i1 := 0 to 100 do
+    for i2 := 0 to 100 do
+      for i3 := 0 to 100 do
+        for i4 := 0 to 100 do
+        if (i1 + i2 + i3 + i4 = 100) then
+        begin
+          totalcapacity :=    Max(0, Ingredients[0].capacity*i1
+                            + Ingredients[1].capacity*i2
+                            + Ingredients[2].capacity*i3
+                            + Ingredients[3].capacity*i4);
+          totaldurability  := Max(0, Ingredients[0].durability*i1
+                            + Ingredients[1].durability*i2
+                            + Ingredients[2].durability*i3
+                            + Ingredients[3].durability*i4);
+          totalflavor :=      Max(0, Ingredients[0].flavor*i1
+                            + Ingredients[1].flavor*i2
+                            + Ingredients[2].flavor*i3
+                            + Ingredients[3].flavor*i4);
+          totaltexture :=     Max(0, Ingredients[0].texture*i1
+                            + Ingredients[1].texture*i2
+                            + Ingredients[2].texture*i3
+                            + Ingredients[3].texture*i4);
+          totalcalories :=  Max(0, Ingredients[0].Calories*i1
+                            + Ingredients[1].Calories*i2
+                            + Ingredients[2].Calories*i3
+                            + Ingredients[3].Calories*i4);
+
+          Score := totalcapacity * totaldurability * totalflavor * totaltexture;
+
+          if (totalcalories = 500) or (not LimitCalories) then
+            Result := Max(Result, Score);
+        end;
+  Ingredients.Free;
+end;
+{$ENDREGION}
+
+(*
 {$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
 begin
@@ -648,8 +1062,9 @@ end;
    *)
 initialization
   RegisterClasses([
-    TAdventOfCodeDay1, TAdventOfCodeDay2, TAdventOfCodeDay3, TAdventOfCodeDay4, TAdventOfCodeDay5,
-    TAdventOfCodeDay6, TAdventOfCodeDay7,TAdventOfCodeDay8, TAdventOfCodeDay9,TAdventOfCodeDay10]);
+    TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3,TAdventOfCodeDay4,TAdventOfCodeDay5,
+    TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9,TAdventOfCodeDay10,
+    TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15 ]);
 
 end.
 
