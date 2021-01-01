@@ -163,6 +163,25 @@ type
     function SolveA: Variant; override;
     function SolveB: Variant; override;
   end;
+
+  TAdventOfCodeDay17 = class(TAdventOfCode)
+  private
+    Combinations: TList<Integer>;
+  protected
+    procedure BeforeSolve; override;
+    procedure AfterSolve; override;
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay18 = class(TAdventOfCode)
+  private
+    function SwitchLights(Const StuckCorners: Boolean): integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
 (*
   TAdventOfCodeDay = class(TAdventOfCode)
   protected
@@ -1113,8 +1132,158 @@ begin
 end;
 
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay17'}
+procedure TAdventOfCodeDay17.BeforeSolve;
+ var Cans: TDictionary<Integer,Integer>;
 
+  procedure FindCans(Const TotalLiters, CanId, CansUsed: Integer);
+  var Size: Integer;
+  begin
+    if TotalLiters = 150 then
+    begin
+      Combinations.Add(CansUsed);
+      exit;
+    end;
 
+    if Cans.TryGetValue(CanId, size) then
+    begin
+      FindCans(TotalLiters, CanId+1, CansUsed);
+      FindCans(TotalLiters+size, CanId+1, CansUsed+1);
+    end;
+  end;
+
+var s: string;
+begin
+  Combinations := TList<Integer>.Create;
+  Cans := TDictionary<Integer,Integer>.create;
+
+  for s in FInput do
+    Cans.Add(Cans.Count+1, s.ToInteger);
+
+  FindCans(0, 1, 0);
+  Cans.Free;
+end;
+
+procedure TAdventOfCodeDay17.AfterSolve;
+begin
+  Combinations.Free;
+end;
+
+function TAdventOfCodeDay17.SolveA: Variant;
+begin
+  Result := Combinations.Count;
+end;
+
+function TAdventOfCodeDay17.SolveB: Variant;
+var MinValue, i: integer;
+begin
+  MinValue := MaxInt;
+  for i in Combinations do
+    MinValue := Min(i, MinValue);
+
+  Result := 0;
+  for i in Combinations do
+    if i = minvalue then
+      Inc(Result);
+end;
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay18'}
+function TAdventOfCodeDay18.SolveA: Variant;
+begin
+  Result := SwitchLights(False);
+end;
+
+function TAdventOfCodeDay18.SolveB: Variant;
+begin
+  Result := SwitchLights(True);
+end;
+
+function TAdventOfCodeDay18.SwitchLights(Const StuckCorners: Boolean): integer;
+var LightGrid: TDictionary<TPoint, Boolean>;
+
+  function CountNeighbours(Const aPoint: TPoint): integer;
+  const DeltaX: array[0..7] of integer = (-1,-1,-1,0,0,1,1,1);
+  const DeltaY: array[0..7] of integer = (-1,0,1,-1,1,-1,0,1);
+  var Point: TPoint;
+      Val: Boolean;
+      i: integer;
+  begin
+    Result := 0;
+    for i := Low(DeltaX) to High(DeltaX) do
+    begin
+      Point := TPoint.Create(aPoint);
+      Point.Offset(DeltaX[i], DeltaY[i]);
+      LightGrid.TryGetValue(Point, val);
+      if Val then
+        Inc(Result);
+    end;
+  end;
+
+  procedure StuckLights;
+
+    procedure Switch(x,y: integer);
+    var Point: TPoint;
+    begin
+      Point := TPoint.Create(x,y);
+      LightGrid[Point] := true;
+    end;
+
+  var Width: Integer;
+  begin
+    Width := FInput.Count-1;
+    Switch(0, 0);
+    Switch(0, Width);
+    Switch(Width, 0);
+    Switch(Width, Width);
+  end;
+
+var PendingChanges: TList<TPoint>;
+    Point: TPoint;
+    i,n,x,y: Integer;
+    b: boolean;
+begin
+  PendingChanges := TList<TPoint>.Create;
+  LightGrid := TDictionary<TPoint, Boolean>.Create;
+
+  for y := 0 to FInput.Count - 1 do
+    for x := 0 to Length(FInput[0]) -1 do
+    begin
+      Point := TPoint.Create(x,y);
+      LightGrid.Add(Point, FInput[y][x+1]= '#');
+    end;
+
+  for i := 1 to 100 do
+  begin
+    PendingChanges.Clear;
+
+    if StuckCorners then
+      StuckLights;
+
+    for Point in LightGrid.Keys do
+    begin
+      n := CountNeighbours(Point);
+      if LightGrid[Point] and (not (n in [2,3])) then
+        PendingChanges.Add(Point)
+      else if not LightGrid[Point] and (n = 3) then
+        PendingChanges.Add(Point);
+    end;
+
+    for Point in PendingChanges do
+      LightGrid[point] := not LightGrid[Point];
+  end;
+
+  if StuckCorners then
+    StuckLights;
+
+  result := 0;
+  for b in LightGrid.Values do
+    if b then
+      Inc(result);
+
+  PendingChanges.Free;
+  LightGrid.Free;
+end;
+{$ENDREGION}
 (*
 {$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -1143,7 +1312,7 @@ initialization
     TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3,TAdventOfCodeDay4,TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9,TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
-    TAdventOfCodeDay16 ]);
+    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18 ]);
 
 end.
 
