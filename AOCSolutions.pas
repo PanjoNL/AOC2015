@@ -182,7 +182,29 @@ type
     function SolveB: Variant; override;
   end;
 
-(*
+  TAdventOfCodeDay19 = class(TAdventOfCode)
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay20 = class(TAdventOfCode)
+  private
+    function Visit(Const infinitePresents: boolean; Const PresentsPerVisit: integer): integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay21 = class(TAdventOfCode)
+  private
+    function SimulateGame(Const PlayerWins: Boolean): Integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  (*
   TAdventOfCodeDay = class(TAdventOfCode)
   protected
     procedure BeforeSolve; override;
@@ -1284,6 +1306,263 @@ begin
   LightGrid.Free;
 end;
 {$ENDREGION}
+{$Region 'TAdventOfCodeDay19'}
+type RMedicinePart = record
+Before, After: string
+end;
+
+function TAdventOfCodeDay19.SolveA: Variant;
+Var Parts: TList<RMedicinePart>;
+    PossibleMedicines: TList<String>;
+    s, BaseMolecule, Medicine: string;
+    Split: TStringDynArray;
+    Part: RMedicinePart;
+    i: integer;
+begin
+  Parts := TList<RMedicinePart>.Create;
+  PossibleMedicines := TList<String>.Create;
+  for s in FInput do
+  begin
+    if s = '' then
+      break;
+    split := SplitString(s, ' ');
+    Part.Before := Split[0];
+    Part.After := Split[2];
+    Parts.Add(Part);
+  end;
+
+  BaseMolecule := FInput[FInput.Count-1];
+  for part in Parts do
+  begin
+    i := 1;
+    while Pos(Part.Before, BaseMolecule, i) > 0 do
+    begin
+      i := Pos(Part.Before, BaseMolecule, i);
+      Medicine := LeftStr(BaseMolecule, Max(i-1, 0)) + Part.After + RightStr(BaseMolecule, Length(BaseMolecule)-Length(Part.Before)-i+1);
+
+      if not PossibleMedicines.Contains(Medicine) then
+        PossibleMedicines.Add(Medicine);
+
+      inc(i);
+    end;
+  end;
+
+  Result := PossibleMedicines.Count;
+  PossibleMedicines.Free;
+  Parts.Free;
+end;
+
+function TAdventOfCodeDay19.SolveB: Variant;
+Var Parts: TList<RMedicinePart>;
+    s, BaseMolecule: string;
+    Split: TStringDynArray;
+    Part: RMedicinePart;
+    i: integer;
+    Comparison: TComparison<RMedicinePart>;
+begin
+  //For some reason this worked (dont know why)
+  Comparison :=
+    function(const Left, Right: RMedicinePart): Integer
+    begin
+      Result := Random(100);
+    end;
+
+  Parts := TList<RMedicinePart>.Create(TComparer<RMedicinePart>.Construct(Comparison));
+  for s in FInput do
+  begin
+    if s = '' then
+      break;
+    split := SplitString(s, ' ');
+    Part.Before := Split[0];
+    Part.After := Split[2];
+    Parts.Add(Part);
+  end;
+
+  Parts.Sort;
+  Result := 0;
+  BaseMolecule := FInput[FInput.Count-1];
+  while BaseMolecule <> 'e' do
+  begin
+    i := Length(BaseMolecule);
+    for part in parts do
+    begin
+      if Pos(part.After, BaseMolecule) > 0 then
+      begin
+        BaseMolecule :=  BaseMolecule.Replace((Part.After), (Part.Before), []);
+        Inc(Result); //207
+        Break;
+      end;
+    end;
+
+    if i = Length(BaseMolecule) then
+      Parts.Sort;
+  end;
+end;
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay20'}
+function TAdventOfCodeDay20.SolveA: Variant;
+begin
+  result := Visit(True, 10);
+end;
+
+function TAdventOfCodeDay20.SolveB: Variant;
+begin
+  result := Visit(False, 11);
+end;
+
+function TAdventOfCodeDay20.Visit(Const infinitePresents: boolean; Const PresentsPerVisit: integer): integer;
+var count, HousesVisited: Integer;
+    Houses: array of Integer;
+    i, j: Integer;
+begin
+  count := StrToInt(FInput[0]);
+
+  SetLength(Houses, Count div 10 + 1);
+  for i := 1 to Length(Houses)  do
+  begin
+    HousesVisited := 0;
+    j := i;
+    while (j <= Length(Houses)) and (infinitePresents or (HousesVisited < 50)) do
+    begin
+      Houses[j] := Houses[j] + i*PresentsPerVisit;
+      Inc(j, i);
+      Inc(HousesVisited);
+    end;
+  end;
+
+  Result := 1;
+  while Houses[integer(Result)] <= count do
+    inc(Result);
+end;
+
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay21'}
+type RItem = record
+  Name: String;
+  Cost, Damage, Armor: Integer;
+end;
+
+Const Weapons: array[0..4] of RItem =
+(
+(Name: 'Dagger';     Cost: 8;  Damage: 4; Armor: 0),
+(Name: 'Shortsword'; Cost: 10; Damage: 5; Armor: 0),
+(Name: 'Warhammer';  Cost: 25; Damage: 6; Armor: 0),
+(Name: 'Longsword';  Cost: 40; Damage: 7; Armor: 0),
+(Name: 'Greataxe';   Cost: 74; Damage: 8; Armor: 0)
+);
+Const Armor: array[0..4] of RItem =
+(
+(Name: 'Leather';    Cost: 13;  Damage: 0; Armor: 1),
+(Name: 'Chainmail';  Cost: 31;  Damage: 0; Armor: 2),
+(Name: 'Splintmail'; Cost: 53;  Damage: 0; Armor: 3),
+(Name: 'Bandedmail'; Cost: 75;  Damage: 0; Armor: 4),
+(Name: 'Platemail '; Cost: 102; Damage: 0; Armor: 5)
+);
+Const Rings: array[0..5] of RItem =
+(
+(Name: 'Damage +1';  Cost: 25;  Damage: 1; Armor: 0),
+(Name: 'Damage +2';  Cost: 50;  Damage: 2; Armor: 0),
+(Name: 'Damage +3';  Cost: 100; Damage: 3; Armor: 0),
+(Name: 'Defense +1'; Cost: 20;  Damage: 0; Armor: 1),
+(Name: 'Defense +2'; Cost: 40;  Damage: 0; Armor: 2),
+(Name: 'Defense +3'; Cost: 80;  Damage: 0; Armor: 3)
+);
+
+function TAdventOfCodeDay21.SimulateGame(Const PlayerWins: Boolean): Integer;
+var BossHitPoints, BossDamage, BossArmor: integer;
+
+  function GetBossStat(Const Index: integer): integer;
+  var s: string;
+  begin
+    s := FInput[Index];
+    result := StrToInt(RightStr(s, Length(s) - (Pos(':', s))));
+  end;
+
+  function PlayGame(Const Items: TList<RItem>; out Cost: integer): Boolean;
+
+    function CalcDamage(Const Damage, Armor: Integer): integer;
+    begin
+      Result := Max(Damage - Armor, 1);
+    end;
+
+  Var Damage, Armor, PlayerHitPoints, TempBossHitPoints: Integer;
+      Item: RItem;
+  begin
+    Result := False;
+    Cost := 0;
+    Damage := 0;
+    Armor  := 0;
+    PlayerHitPoints := 100;
+    TempBossHitPoints := BossHitPoints;
+    for Item in Items do
+    begin
+      Inc(Cost, Item.Cost);
+      Inc(Damage, Item.Damage);
+      Inc(Armor, Item.Armor);
+    end;
+
+    while True do
+    begin
+      TempBossHitPoints := TempBossHitPoints - CalcDamage(Damage, BossArmor);
+      if TempBossHitPoints <= 0 then
+        Exit(True); //Player won
+
+      PlayerHitPoints := PlayerHitPoints - CalcDamage(BossDamage, Armor);
+      if PlayerHitPoints <= 0 then
+        Exit(False);
+    end;
+  end;
+
+var Items: TList<RItem>;
+    WeaponIndex, ArmorIndex, Ring1Index, Ring2Index, Cost: integer;
+begin
+  BossHitPoints := GetBossStat(0);
+  BossDamage := GetBossStat(1);
+  BossArmor := GetBossStat(2);
+
+  Items := TList<RItem>.Create;
+
+  if PlayerWins then
+    Result := MaxInt
+  else
+    Result := 0;
+
+  for WeaponIndex := Low(Weapons) to High(Weapons) do
+    for ArmorIndex := Low(Armor) to High(Armor) + 1 do
+      for Ring1Index := Low(Rings) to High(Rings) + 1 do
+        for Ring2Index := Ring1Index to High(Rings) + 1 do
+        begin
+          Items.Clear;
+          Items.Add(Weapons[WeaponIndex]);
+          if InRange(ArmorIndex, Low(Armor), High(Armor)) then
+            Items.Add(Armor[ArmorIndex]);
+          if InRange(Ring1Index, Low(Rings), High(Rings)) then
+            Items.Add(Rings[Ring1Index]);
+          if InRange(Ring2Index, Low(Rings), High(Rings)) then
+            Items.Add(Rings[Ring2Index]);
+
+          if PlayGame(Items, Cost) = PlayerWins then
+          begin
+            if PlayerWins then
+              Result := Min(Cost, Result)
+            else
+              Result := Max(Cost, Result)
+          end;
+        end;
+  Items.Free;
+end;
+
+
+function TAdventOfCodeDay21.SolveA: Variant;
+begin
+  Result := SimulateGame(True);
+end;
+
+function TAdventOfCodeDay21.SolveB: Variant;
+begin
+  Result := SimulateGame(False);
+end;
+{$ENDREGION}
 (*
 {$Region 'TAdventOfCodeDay'}
 procedure TAdventOfCodeDay.BeforeSolve;
@@ -1312,7 +1591,8 @@ initialization
     TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3,TAdventOfCodeDay4,TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9,TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
-    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18 ]);
+    TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19,TAdventOfCodeDay20,
+    TAdventOfCodeDay21  ]);
 
 end.
 
