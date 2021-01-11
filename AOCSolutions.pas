@@ -204,15 +204,36 @@ type
     function SolveB: Variant; override;
   end;
 
-  (*
-  TAdventOfCodeDay = class(TAdventOfCode)
+  TAdventOfCodeDay22 = class(TAdventOfCode)
+  private
+    function PlayGame(Const HardMode: Boolean): integer;
   protected
-    procedure BeforeSolve; override;
-    procedure AfterSolve; override;
     function SolveA: Variant; override;
     function SolveB: Variant; override;
   end;
-*)
+
+  TAdventOfCodeDay23 = class(TAdventOfCode)
+  private
+    function RunProgram(StartValueA: Integer): Integer;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay24 = class(TAdventOfCode)
+  private
+    function LoadSleigh(const Groups: integer): int64;
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
+  TAdventOfCodeDay25 = class(TAdventOfCode)
+  protected
+    function SolveA: Variant; override;
+    function SolveB: Variant; override;
+  end;
+
 
 implementation
 
@@ -1488,7 +1509,6 @@ var BossHitPoints, BossDamage, BossArmor: integer;
   Var Damage, Armor, PlayerHitPoints, TempBossHitPoints: Integer;
       Item: RItem;
   begin
-    Result := False;
     Cost := 0;
     Damage := 0;
     Armor  := 0;
@@ -1563,36 +1583,295 @@ begin
   Result := SimulateGame(False);
 end;
 {$ENDREGION}
-(*
-{$Region 'TAdventOfCodeDay'}
-procedure TAdventOfCodeDay.BeforeSolve;
+{$Region 'TAdventOfCodeDay22'}
+function TAdventOfCodeDay22.SolveA: Variant;
 begin
-
+  Result := PlayGame(False);
 end;
 
-procedure TAdventOfCodeDay.AfterSolve;
+function TAdventOfCodeDay22.SolveB: Variant;
 begin
-
+  Result := PlayGame(True);
 end;
 
-function TAdventOfCodeDay.SolveA: Variant;
-begin
+function TAdventOfCodeDay22.PlayGame(Const HardMode: Boolean): integer;
+var BossDamage: Integer;
 
+  function GetBossStat(Const Index: integer): integer;
+  var s: string;
+  begin
+    s := FInput[Index];
+    result := StrToInt(RightStr(s, Length(s) - (Pos(':', s))));
+  end;
+
+  procedure Simulate2(PlayersTurn: Boolean; aPlayerHealh, aBossHealth, aTurn, aRemainingMana, ManaSpent, ShieldActive, PoisenActive, RechargeActive: Integer);
+  Var PlayerArmor: Integer;
+  begin
+    if ManaSpent > result then
+      Exit;
+
+    if aBossHealth <= 0 then
+    begin
+      Result := Min(Result, ManaSpent);
+      Exit;
+    end;
+
+    if HardMode and PlayersTurn then
+      Dec(aPlayerHealh);
+
+    if aPlayerHealh <= 0 then
+      Exit; //Player died
+
+    //Effects;
+    PlayerArmor := 0;
+    Dec(ShieldActive);
+    if ShieldActive >= 0 then
+      PlayerArmor := 7;
+
+    Dec(PoisenActive);
+    if PoisenActive >= 0 then
+      aBossHealth := aBossHealth - 3;
+
+    Dec(RechargeActive);
+    if RechargeActive >= 0 then
+      aRemainingMana := aRemainingMana + 101;
+
+    if aBossHealth <= 0 then
+    begin
+      Result := Min(Result, ManaSpent);
+      Exit;
+    end;
+
+    if PlayersTurn then
+    begin
+      if aRemainingMana >= 53 then
+        Simulate2(False, aPlayerHealh, aBossHealth-4, aTurn+1, aRemainingMana-53, ManaSpent+53, ShieldActive, PoisenActive, RechargeActive);
+
+      if aRemainingMana >= 73 then
+        Simulate2(False, aPlayerHealh+2, aBossHealth-2, aTurn+1, aRemainingMana-73, ManaSpent+73, ShieldActive, PoisenActive, RechargeActive);
+
+      if (aRemainingMana >= 113) and (ShieldActive <= 0) then
+        Simulate2(False, aPlayerHealh, aBossHealth, aTurn+1, aRemainingMana-113, ManaSpent+113, 6, PoisenActive, RechargeActive);
+
+      if (aRemainingMana >= 173) and (PoisenActive <= 0) then
+        Simulate2(False, aPlayerHealh, aBossHealth, aTurn+1, aRemainingMana-173, ManaSpent+173, ShieldActive, 6, RechargeActive);
+
+      if (aRemainingMana >= 229) and (RechargeActive <= 0) then
+        Simulate2(False, aPlayerHealh, aBossHealth, aTurn+1, aRemainingMana-229, ManaSpent+229, ShieldActive, PoisenActive, 5);
+    end
+    else
+    begin
+      aPlayerHealh := aPlayerHealh - Max(BossDamage - PlayerArmor, 1);
+      Simulate2(True, aPlayerHealh, aBossHealth, aTurn+1, aRemainingMana, ManaSpent, ShieldActive, PoisenActive, RechargeActive);
+    end;
+  end;
+
+begin
+  BossDamage := GetBossStat(1);
+  Result := MaxInt;
+  Simulate2(True, 50, GetBossStat(0), 0, 500, 0, 0, 0, 0);
 end;
 
-function TAdventOfCodeDay.SolveB: Variant;
-begin
 
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay23'}
+function TAdventOfCodeDay23.SolveA: Variant;
+begin
+  Result := RunProgram(0);
+end;
+
+function TAdventOfCodeDay23.SolveB: Variant;
+begin
+  Result := RunProgram(1);
+end;
+
+function TAdventOfCodeDay23.RunProgram(StartValueA: Integer): Integer;
+ Var RegisterA, RegisterB: Integer;
+
+  function IsRegisterA(Const aRegister: String): Boolean;
+  begin
+    Result := SameText(aRegister, 'a');
+  end;
+
+  procedure SetRegister(Const aRegister: string; Const Value: Integer);
+  begin
+    if IsRegisterA(aRegister) then
+      RegisterA := Value
+    else
+      RegisterB := Value;
+  end;
+
+  function GetRegister(Const aRegister: string): Integer;
+  begin
+    if IsRegisterA(aRegister) then
+      Result := RegisterA
+    else
+      Result := RegisterB;
+  end;
+
+var Pointer: Integer;
+    Instruction: TStringDynArray;
+begin
+  RegisterA := StartValueA;
+  RegisterB := 0;
+  Pointer := 0;
+
+  while (Pointer >= 0) and (Pointer < FInput.Count) do
+  begin
+    Instruction := SplitString(FInput[Pointer].Replace('+','').Replace(',', ''), ' ');
+    case IndexStr(Instruction[0], ['hlf', 'tpl', 'inc', 'jmp', 'jie', 'jio']) of
+      0: SetRegister(Instruction[1], GetRegister(Instruction[1]) div 2);
+      1: SetRegister(Instruction[1], GetRegister(Instruction[1]) * 3);
+      2: SetRegister(Instruction[1], GetRegister(Instruction[1]) + 1);
+      3: Pointer := Pointer + StrToInt(Instruction[1])-1;
+      4: if not odd(GetRegister(Instruction[1])) then
+          Pointer := Pointer + StrToInt(Instruction[2])-1;
+      5: if (GetRegister(Instruction[1]) = 1) then
+          Pointer := Pointer + StrToInt(Instruction[2])-1;
+    end;
+    Inc(Pointer)
+  end;
+
+  Result := RegisterB;
 end;
 {$ENDREGION}
-   *)
+{$Region 'TAdventOfCodeDay24'}
+function TAdventOfCodeDay24.SolveA: Variant;
+begin
+  Result := LoadSleigh(3);
+end;
+
+function TAdventOfCodeDay24.SolveB: Variant;
+begin
+  Result := LoadSleigh(4);
+end;
+
+function TAdventOfCodeDay24.LoadSleigh(const Groups: integer): int64;
+var Numbers: TList<Int64>;
+    s: string;
+    Total, Target: int64;
+    PackegesCount: Integer;
+
+    function CanCreateTotal(id, atotal: Int64; Used: TList<Int64>): Boolean;
+    begin
+      Result := atotal = Target;
+      if Result or (id >= Numbers.Count) then
+        Exit;
+
+      Result := CanCreateTotal(id + 1, atotal, used);
+
+      if Result  then
+        Exit;
+
+      if not Used.Contains(Numbers[id]) then
+        Result := Result or CanCreateTotal(id+1, atotal+Numbers[id], Used);
+    end;
+
+    procedure Process(PresentId, aCurrentWeight: Int64; Used: TList<Int64>);
+    var i, Product: int64;
+    begin
+      if (aCurrentWeight > Target) or (Used.Count > PackegesCount) then
+        Exit;
+
+      if aCurrentWeight = Target then
+      begin
+        Product := int64(1);
+
+        if CanCreateTotal(0, 0, Used) then
+        begin
+          for i in Used do
+          begin
+            s := s + ' ' + i.ToString;
+            Product := Product * int64(i);
+          end;
+
+          if Used.Count < PackegesCount then
+          begin
+            Result := Product;
+            PackegesCount := Used.Count;
+          end
+          else
+            Result := Min(Result, Product)
+        end
+      end
+      else
+      begin
+        if (PresentId >= Numbers.Count)  then
+          Exit;
+
+        Process(PresentId + 1, aCurrentWeight, Used);
+
+        Used.Add(Numbers[PresentId]);
+        Process(PresentId + 1, aCurrentWeight + Numbers[PresentId], Used);
+        Used.Remove(Numbers[PresentId]);
+      end;
+    end;
+
+var NumsUsed: TList<Int64>;
+begin
+  Numbers := TList<Int64>.Create;
+  NumsUsed := TList<Int64>.Create;
+  Total := 0;
+  PackegesCount := MaxInt;
+  for s in FInput do
+  begin
+    Inc(Total, s.ToInt64);
+    Numbers.Add(s.ToInt64);
+  end;
+
+  Target := Total div Groups;
+
+  Result := 999999999999999999;
+  Process(0, 0, NumsUsed);
+end;
+{$ENDREGION}
+{$Region 'TAdventOfCodeDay25'}
+function TAdventOfCodeDay25.SolveA: Variant;
+Const multi: Int64 = 252533;
+      divide: Int64 = 33554393;
+Var Split: TStringDynArray;
+    TargetRow, TargetColumn, x, y, a: Int64;
+begin
+  Split := SplitString(Finput[0].Replace(',', '').Replace('.',''), ' ');
+  TargetRow := Split[Length(Split) - 3].ToInt64;
+  TargetColumn := Split[Length(Split) - 1].ToInt64;
+
+  x := 1;
+  y := 1;
+  a := 20151125;
+
+  while True do
+  begin
+    if (y = TargetRow) and (x = TargetColumn) then
+      exit(a);
+
+    if y = 1 then
+    begin
+      y := x + 1;
+      x := 1;
+    end
+    else
+    begin
+      Dec(y);
+      Inc(x);
+    end;
+
+    a := (a * Multi) mod divide;
+  end;
+end;
+
+function TAdventOfCodeDay25.SolveB: Variant;
+begin
+  Result := 'Done!'
+end;
+{$ENDREGION}
 initialization
   RegisterClasses([
     TAdventOfCodeDay1,TAdventOfCodeDay2,TAdventOfCodeDay3,TAdventOfCodeDay4,TAdventOfCodeDay5,
     TAdventOfCodeDay6,TAdventOfCodeDay7,TAdventOfCodeDay8,TAdventOfCodeDay9,TAdventOfCodeDay10,
     TAdventOfCodeDay11,TAdventOfCodeDay12,TAdventOfCodeDay13,TAdventOfCodeDay14,TAdventOfCodeDay15,
     TAdventOfCodeDay16,TAdventOfCodeDay17,TAdventOfCodeDay18,TAdventOfCodeDay19,TAdventOfCodeDay20,
-    TAdventOfCodeDay21  ]);
+    TAdventOfCodeDay21,TAdventOfCodeDay22,TAdventOfCodeDay23,TAdventOfCodeDay24,TAdventOfCodeDay25]);
 
 end.
 
